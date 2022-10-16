@@ -48,6 +48,7 @@ pub struct KeyVal {
 
 fn parse_key_val(s: &str) -> Result<KeyVal> {
     let mut parts = s.splitn(2, "=");
+
     let key = parts
         .next()
         .ok_or_else(|| anyhow!("Invalid key value pair: {}", s))?

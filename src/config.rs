@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use anyhow::{Ok, Result};
+use anyhow::Result;
 use reqwest::{header::HeaderMap, Method};
 use serde::{Deserialize, Serialize};
 use tokio::fs;
