@@ -1,12 +1,11 @@
 use std::collections::HashMap;
 
 use anyhow::Result;
-use reqwest::{header::HeaderMap, Method};
 use serde::{Deserialize, Serialize};
 use tokio::fs;
-use url::Url;
 
 use crate::ExtraArgs;
+use crate::RequestProfile;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct DiffConfig {
@@ -19,22 +18,6 @@ pub struct DiffProfile {
     pub req1: RequestProfile,
     pub req2: RequestProfile,
     pub res: ResponseProfile,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct RequestProfile {
-    #[serde(with = "http_serde::method", default)]
-    pub method: Method,
-    pub url: Url,
-    #[serde(skip_serializing_if = "Option::is_none", default)]
-    pub params: Option<serde_json::Value>,
-    #[serde(
-        skip_serializing_if = "HeaderMap::is_empty",
-        with = "http_serde::header_map",
-        default
-    )]
-    pub headers: HeaderMap,
-    pub body: Option<serde_json::Value>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

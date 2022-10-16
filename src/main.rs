@@ -31,7 +31,6 @@ async fn run(args: RunArgs) -> Result<()> {
     })?;
 
     let extra_args = args.extra_params.into();
-
     profile.diff(extra_args).await?;
 
     Ok(())

@@ -1,7 +1,9 @@
 pub mod cli;
 mod config;
+mod req;
 
-pub use config::{DiffConfig, DiffProfile, RequestProfile, ResponseProfile};
+pub use config::{DiffConfig, DiffProfile, ResponseProfile};
+pub use req::RequestProfile;
 
 #[derive(Debug, Clone)]
 pub struct ExtraArgs {
