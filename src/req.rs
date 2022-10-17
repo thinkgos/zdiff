@@ -1,10 +1,8 @@
 use std::{ops::Deref, str::FromStr};
 
 use anyhow::{anyhow, Ok, Result};
-use reqwest::{
-    header::{self, HeaderMap, HeaderName, HeaderValue},
-    Client, Method, Response,
-};
+use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
+use reqwest::{header, Client, Method, Response};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use url::Url;
@@ -70,11 +68,9 @@ impl RequestProfile {
 
     pub async fn send(&self, args: &ExtraArgs) -> Result<ResponseExt> {
         // 先合并 requestProfile 和 ExtraArgs
-
         let (headers, query, body) = self.generate(args)?;
 
         let client = Client::new();
-
         let req = client
             .request(self.method.clone(), self.url.clone())
             .query(&query)

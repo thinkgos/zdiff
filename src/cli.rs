@@ -10,7 +10,7 @@ pub struct Args {
 }
 
 #[derive(Subcommand, Debug, Clone)]
-#[non_exhaustive] // 表明未来还有元素
+#[non_exhaustive] // 表明未来还有其它元素添加
 pub enum Action {
     /// Diff  tow API responses base on given profile
     Run(RunArgs),
