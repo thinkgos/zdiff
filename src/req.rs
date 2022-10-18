@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use url::Url;
 
-use crate::ExtraArgs;
+use crate::{ExtraArgs, ResponseProfile};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct RequestProfile {
@@ -50,12 +50,9 @@ impl RequestProfile {
         }
 
         // application/json; charset=utf-8
-        let content_type = headers
-            .get(header::CONTENT_TYPE)
-            .map(|v| v.to_str().unwrap().split(';').next())
-            .flatten();
+        let content_type = get_content_type(&headers);
 
-        let body: Result<String> = match content_type {
+        let body: Result<String> = match content_type.as_deref() {
             Some("application/json") => Ok(serde_json::to_string(&body)?),
             Some("application/x-www-form-urlencoded" | "multipart/form-data") => {
                 Ok(serde_urlencoded::to_string(&body)?)
@@ -86,10 +83,62 @@ impl RequestProfile {
 #[derive(Debug)]
 pub struct ResponseExt(Response);
 
+impl ResponseExt {
+    pub async fn filter_text(self, profile: &ResponseProfile) -> Result<String> {
+        let mut output = String::new();
+
+        output.push_str(&format!("{:?} {}\r\n", self.version(), self.status()));
+
+        for header in self.headers().iter() {
+            if !profile.skip_headers.contains(&header.0.to_string()) {
+                output.push_str(&format!("{}: {}\n", header.0, header.1.to_str()?));
+            }
+        }
+        output.push_str("\n");
+
+        // application/json; charset=utf-8
+        let content_type = get_content_type(&self.headers());
+        let text = self.0.text().await?;
+
+        match content_type.as_deref() {
+            Some("application/json") => {
+                let text = filter_json(&text, &profile.skip_body)?;
+                output.push_str(&text);
+            }
+            _ => return Err(anyhow!("unsupported content-type")),
+        };
+
+        Ok(output)
+    }
+}
+
 impl Deref for ResponseExt {
     type Target = Response;
 
     fn deref(&self) -> &Self::Target {
         &self.0
     }
+}
+fn filter_json(text: &str, skip_body: &[String]) -> Result<String> {
+    let mut json: serde_json::Value = serde_json::from_str(text)?;
+
+    match json {
+        serde_json::Value::Object(ref mut obj) => {
+            for k in skip_body {
+                obj.remove(k);
+            }
+        }
+        _ =>
+            // TODO: support array of objects
+            {}
+    }
+
+    Ok(serde_json::to_string_pretty(&json)?)
+}
+fn get_content_type(headers: &HeaderMap) -> Option<String> {
+    headers
+        .get(header::CONTENT_TYPE)
+        .map(|v| v.to_str().unwrap().split(';').next())
+        .flatten()
+        .map(|v| v.to_string())
 }
