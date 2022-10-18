@@ -70,7 +70,7 @@ impl RequestProfile {
         // 先合并 requestProfile 和 ExtraArgs
         let (headers, query, body) = self.generate(args)?;
 
-        let client = Client::new();
+        let client = Client::builder().build()?;
         let req = client
             .request(self.method.clone(), self.url.clone())
             .query(&query)
