@@ -84,17 +84,10 @@ impl RequestProfile {
 pub struct ResponseExt(Response);
 
 impl ResponseExt {
-    pub async fn filter_text(self, profile: &ResponseProfile) -> Result<String> {
+    pub async fn get_text(self, profile: &ResponseProfile) -> Result<String> {
         let mut output = String::new();
 
-        output.push_str(&format!("{:?} {}\r\n", self.version(), self.status()));
-
-        for header in self.headers().iter() {
-            if !profile.skip_headers.contains(&header.0.to_string()) {
-                output.push_str(&format!("{}: {}\n", header.0, header.1.to_str()?));
-            }
-        }
-        output.push_str("\n");
+        output.push_str(&self.get_headers(&profile.skip_headers)?);
 
         // application/json; charset=utf-8
         let content_type = get_content_type(&self.headers());
@@ -107,6 +100,20 @@ impl ResponseExt {
             }
             _ => return Err(anyhow!("unsupported content-type")),
         };
+
+        Ok(output)
+    }
+    fn get_headers(&self, skip_headers: &[String]) -> Result<String> {
+        let mut output = String::new();
+
+        output.push_str(&format!("{:?} {}\r\n", self.version(), self.status()));
+
+        for header in self.headers().iter() {
+            if !skip_headers.contains(&header.0.to_string()) {
+                output.push_str(&format!("{}: {}\n", header.0, header.1.to_str()?));
+            }
+        }
+        output.push_str("\n");
 
         Ok(output)
     }
