@@ -1,7 +1,8 @@
+use std::ops::Deref;
 use std::str::FromStr;
 
-use anyhow::{Ok, Result};
-use reqwest::header::HeaderMap;
+use anyhow::{anyhow, Result};
+use reqwest::header::{self, HeaderMap, HeaderName, HeaderValue};
 use reqwest::Method;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -21,6 +22,44 @@ pub struct RequestProfile {
     )]
     pub headers: HeaderMap,
     pub body: Option<serde_json::Value>,
+}
+
+impl RequestProfile {
+    pub fn merge(&self, args: &super::ExtraArgs) -> Result<(HeaderMap, serde_json::Value, String)> {
+        let mut headers = self.headers.clone();
+        let mut query = self.params.clone().unwrap_or_else(|| json!({}));
+        let mut body = self.body.clone().unwrap_or_else(|| json!({}));
+
+        for (k, v) in args.headers.deref() {
+            headers.insert(HeaderName::from_str(k)?, HeaderValue::from_str(v)?);
+        }
+
+        if !headers.contains_key(header::CONTENT_TYPE) {
+            headers.insert(
+                header::CONTENT_TYPE,
+                HeaderValue::from_static("application/json"),
+            );
+        }
+
+        for (k, v) in args.query.deref() {
+            query[k] = v.parse()?;
+        }
+        for (k, v) in args.body.deref() {
+            body[k] = v.parse()?;
+        }
+
+        // application/json; charset=utf-8
+        let content_type = get_content_type(&headers);
+
+        let body: Result<String> = match content_type.as_deref() {
+            Some("application/json") => Ok(serde_json::to_string(&body)?),
+            Some("application/x-www-form-urlencoded" | "multipart/form-data") => {
+                Ok(serde_urlencoded::to_string(&body)?)
+            }
+            _ => Err(anyhow!("unsupported content-type")),
+        };
+        body.map(|body| (headers, query, body))
+    }
 }
 
 impl FromStr for RequestProfile {
@@ -68,5 +107,25 @@ impl ResponseProfile {
             skip_headers,
             skip_body,
         }
+    }
+}
+
+fn get_content_type(headers: &HeaderMap) -> Option<String> {
+    headers
+        .get(header::CONTENT_TYPE)
+        .and_then(|v| v.to_str().unwrap().split(';').next().map(|v| v.to_string()))
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Profile {
+    pub req1: RequestProfile,
+    pub req2: RequestProfile,
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub res: Option<ResponseProfile>,
+}
+
+impl Profile {
+    pub fn new(req1: RequestProfile, req2: RequestProfile, res: Option<ResponseProfile>) -> Self {
+        Self { req1, req2, res }
     }
 }

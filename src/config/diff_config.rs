@@ -4,16 +4,16 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use tokio::fs;
 
-use super::DiffProfile;
+use super::Profile;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct DiffConfig {
     #[serde(flatten)]
-    pub profiles: HashMap<String, DiffProfile>,
+    pub profiles: HashMap<String, Profile>,
 }
 
 impl DiffConfig {
-    pub fn new(name: &str, profile: DiffProfile) -> Self {
+    pub fn new(name: &str, profile: Profile) -> Self {
         let mut m = HashMap::new();
         m.insert(name.to_owned(), profile);
         Self { profiles: m }
@@ -28,7 +28,7 @@ impl DiffConfig {
         Ok(serde_yaml::from_str(content)?)
     }
 
-    pub fn get_profile(&self, name: &str) -> Option<&DiffProfile> {
+    pub fn get_profile(&self, name: &str) -> Option<&Profile> {
         self.profiles.get(name)
     }
 }

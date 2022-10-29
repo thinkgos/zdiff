@@ -4,7 +4,7 @@ use dialoguer::{theme::ColorfulTheme, Input, MultiSelect};
 use std::io::Write;
 
 use zdiff::cli::{Action, Args, RunArgs};
-use zdiff::config::{DiffConfig, DiffProfile, ExtraArgs, RequestProfile, ResponseProfile};
+use zdiff::config::{DiffConfig, ExtraArgs, Profile, RequestProfile, ResponseProfile};
 use zdiff::{diff, highlight_text};
 
 #[tokio::main]
@@ -37,8 +37,6 @@ async fn run(args: RunArgs) -> Result<()> {
         query: args.query.into(),
         body: args.body.into(),
     };
-
-    println!("{:?}", extra_args);
     let diff_str = diff(profile, extra_args).await?;
 
     println!("{}", diff_str);
@@ -81,7 +79,7 @@ fn parse() -> Result<()> {
     let req1: RequestProfile = url1.parse()?;
     let req2: RequestProfile = url2.parse()?;
     let res = ResponseProfile::new(skip_headers, vec![]);
-    let diff_profile = DiffProfile::new(req1, req2, Some(res));
+    let diff_profile = Profile::new(req1, req2, Some(res));
     let config = DiffConfig::new(&profile, diff_profile);
 
     let result = serde_yaml::to_string(&config)?;

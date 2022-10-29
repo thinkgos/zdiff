@@ -4,7 +4,7 @@ use anyhow::{Ok, Result};
 use reqwest::header::HeaderMap;
 use reqwest::{header, Client, Response};
 
-use crate::config::{self, DiffProfile, ExtraArgs, RequestProfile, ResponseProfile};
+use crate::config::{ExtraArgs, Profile, RequestProfile, ResponseProfile};
 use crate::utils::diff_text;
 
 #[derive(Debug)]
@@ -77,7 +77,7 @@ fn get_content_type(headers: &HeaderMap) -> Option<String> {
 
 pub async fn send(rp: &RequestProfile, args: &ExtraArgs) -> Result<ResponseExt> {
     // 先合并 requestProfile 和 ExtraArgs
-    let (headers, query, body) = config::generate(rp, args)?;
+    let (headers, query, body) = rp.merge(args)?;
 
     let client = Client::builder().build()?;
     let req = client
@@ -91,7 +91,7 @@ pub async fn send(rp: &RequestProfile, args: &ExtraArgs) -> Result<ResponseExt> 
     Ok(ResponseExt(res))
 }
 
-pub async fn diff(dp: &DiffProfile, args: ExtraArgs) -> Result<String> {
+pub async fn diff(dp: &Profile, args: ExtraArgs) -> Result<String> {
     let res1 = send(&dp.req1, &args).await?;
     let res2 = send(&dp.req2, &args).await?;
 

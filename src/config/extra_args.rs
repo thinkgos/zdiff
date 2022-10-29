@@ -12,8 +12,8 @@ pub struct ExtraArgs {
 #[derive(Debug, Clone)]
 pub struct Parameter(Vec<(String, String)>);
 
-impl From<Vec<KeyVal>> for Parameter {
-    fn from(args: Vec<KeyVal>) -> Self {
+impl From<Vec<KeyValue>> for Parameter {
+    fn from(args: Vec<KeyValue>) -> Self {
         Self(args.into_iter().map(|v| (v.key, v.value)).collect())
     }
 }
@@ -27,12 +27,12 @@ impl Deref for Parameter {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct KeyVal {
+pub struct KeyValue {
     pub key: String,
     pub value: String,
 }
 
-impl FromStr for KeyVal {
+impl FromStr for KeyValue {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -46,7 +46,7 @@ impl FromStr for KeyVal {
             .next()
             .ok_or_else(|| anyhow!("Invalid key value pair: {}", s))?
             .trim();
-        Ok(KeyVal {
+        Ok(KeyValue {
             key: key.to_owned(),
             value: value.to_owned(),
         })
