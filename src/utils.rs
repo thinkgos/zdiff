@@ -3,6 +3,12 @@ use std::fmt;
 use anyhow::Result;
 use console::{style, Style};
 use similar::{ChangeTag, TextDiff};
+use syntect::{
+    easy::HighlightLines,
+    highlighting::ThemeSet,
+    parsing::SyntaxSet,
+    util::{as_24_bit_terminal_escaped, LinesWithEndings},
+};
 
 struct Line(Option<usize>);
 
@@ -49,6 +55,23 @@ pub fn diff_text(text1: &str, text2: &str) -> Result<String> {
                 }
             }
         }
+    }
+    Ok(output)
+}
+
+pub fn highlight_text(s: &str, extension: &str) -> Result<String> {
+    // Load these once at the start of your program
+    let ps = SyntaxSet::load_defaults_newlines();
+    let ts = ThemeSet::load_defaults();
+
+    let syntax = ps.find_syntax_by_extension(extension).unwrap();
+    let mut h = HighlightLines::new(syntax, &ts.themes["base16-ocean.dark"]);
+
+    let mut output = String::new();
+    for line in LinesWithEndings::from(s) {
+        let ranges = h.highlight_line(line, &ps).unwrap();
+        let escaped = as_24_bit_terminal_escaped(&ranges[..], false);
+        output.push_str(&escaped);
     }
     Ok(output)
 }

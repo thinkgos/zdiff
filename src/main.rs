@@ -4,7 +4,7 @@ use dialoguer::{theme::ColorfulTheme, Input, MultiSelect};
 use std::io::Write;
 use zdiff::{
     cli::{Action, Args, RunArgs},
-    DiffConfig, DiffProfile, RequestProfile, ResponseProfile,
+    highlight_text, DiffConfig, DiffProfile, RequestProfile, ResponseProfile,
 };
 
 #[tokio::main]
@@ -79,11 +79,10 @@ fn parse() -> Result<()> {
     let config = DiffConfig::new(&profile, diff_profile);
 
     let result = serde_yaml::to_string(&config)?;
+    let result = highlight_text(&result, "yaml")?;
 
     let stdout = std::io::stdout();
     let mut stdout = stdout.lock();
     write!(stdout, "---\n{}", result)?;
-
-    println!("{url1} {url2}");
     Ok(())
 }
