@@ -80,28 +80,63 @@ impl RequestProfile {
     }
 }
 
+impl FromStr for RequestProfile {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut url: Url = s.parse()?;
+        let qs = url.query_pairs();
+        let mut params = json!({});
+
+        for (k, v) in qs {
+            params[&*k] = v.parse()?;
+        }
+        url.set_query(None);
+
+        // 如果json的object为空, 则为为None
+        let p_params =
+            if params.is_null() || (params.is_object() && params.as_object().unwrap().is_empty()) {
+                None
+            } else {
+                Some(params)
+            };
+
+        Ok(RequestProfile {
+            method: Method::GET,
+            url: url,
+            params: p_params,
+            headers: HeaderMap::new(),
+            body: None,
+        })
+    }
+}
+
 #[derive(Debug)]
 pub struct ResponseExt(Response);
 
 impl ResponseExt {
-    pub async fn get_text(self, profile: &ResponseProfile) -> Result<String> {
-        let mut output = String::new();
+    pub async fn get_text(self, profile: &Option<ResponseProfile>) -> Result<String> {
+        if let Some(profile) = profile {
+            let mut output = String::new();
 
-        output.push_str(&self.get_headers(&profile.skip_headers)?);
+            output.push_str(&self.get_headers(&profile.skip_headers)?);
 
-        // application/json; charset=utf-8
-        let content_type = get_content_type(self.headers());
-        let text = self.0.text().await?;
+            // application/json; charset=utf-8
+            let content_type = get_content_type(self.headers());
+            let text = self.0.text().await?;
 
-        match content_type.as_deref() {
-            Some("application/json") => {
-                let text = filter_json(&text, &profile.skip_body)?;
-                output.push_str(&text);
-            }
-            _ => return Err(anyhow!("unsupported content-type")),
-        };
+            match content_type.as_deref() {
+                Some("application/json") => {
+                    let text = filter_json(&text, &profile.skip_body)?;
+                    output.push_str(&text);
+                }
+                _ => return Ok(text),
+            };
 
-        Ok(output)
+            Ok(output)
+        } else {
+            Ok(self.0.text().await?)
+        }
     }
     fn get_headers(&self, skip_headers: &[String]) -> Result<String> {
         let mut output = String::new();

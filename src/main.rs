@@ -1,9 +1,10 @@
 use anyhow::{anyhow, Ok, Result};
 use clap::Parser;
-
+use dialoguer::{theme::ColorfulTheme, Input, MultiSelect};
+use std::io::Write;
 use zdiff::{
     cli::{Action, Args, RunArgs},
-    DiffConfig,
+    DiffConfig, DiffProfile, RequestProfile, ResponseProfile,
 };
 
 #[tokio::main]
@@ -12,6 +13,7 @@ async fn main() -> Result<()> {
 
     match args.action {
         Action::Run(args) => run(args).await?,
+        Action::Parse => parse()?,
         _ => panic!("Not implemented"),
     }
 
@@ -34,5 +36,54 @@ async fn run(args: RunArgs) -> Result<()> {
     let diff_str = profile.diff(extra_args).await?;
 
     println!("{}", diff_str);
+    Ok(())
+}
+
+fn parse() -> Result<()> {
+    let url1: String = Input::with_theme(&ColorfulTheme::default())
+        .with_prompt("url1")
+        .interact_text()?;
+    let url2: String = Input::with_theme(&ColorfulTheme::default())
+        .with_prompt("url2")
+        .interact_text()?;
+    let profile: String = Input::with_theme(&ColorfulTheme::default())
+        .with_prompt("profile")
+        .interact_text()?;
+
+    let headers = [
+        "date",
+        "x-ratelimit-limit",
+        "x-ratelimit-remaining",
+        "x-ratelimit-reset",
+        "vary",
+        "cache-control",
+        "expires",
+        "etag",
+        "via",
+        "cf-cache-status",
+        "expect-ct",
+        "report-to",
+        "cf-ray",
+    ];
+    let chosen = MultiSelect::with_theme(&ColorfulTheme::default())
+        .with_prompt("Select headers to skip")
+        .items(&headers)
+        .interact()?;
+
+    let skip_headers = chosen.iter().map(|v| headers[*v].to_string()).collect();
+
+    let req1: RequestProfile = url1.parse()?;
+    let req2: RequestProfile = url2.parse()?;
+    let res = ResponseProfile::new(skip_headers, vec![]);
+    let diff_profile = DiffProfile::new(req1, req2, Some(res));
+    let config = DiffConfig::new(&profile, diff_profile);
+
+    let result = serde_yaml::to_string(&config)?;
+
+    let stdout = std::io::stdout();
+    let mut stdout = stdout.lock();
+    write!(stdout, "---\n{}", result)?;
+
+    println!("{url1} {url2}");
     Ok(())
 }
