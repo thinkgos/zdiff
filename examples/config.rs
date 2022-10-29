@@ -1,6 +1,6 @@
 use anyhow::Result;
 
-use zdiff::DiffConfig;
+use zdiff::config::DiffConfig;
 
 fn main() -> Result<()> {
     let content = include_str!("../fixtures/test.yml");

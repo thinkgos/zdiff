@@ -1,11 +1,11 @@
-use anyhow::{anyhow, Ok, Result};
+use anyhow::{anyhow, Result};
 use clap::Parser;
 use dialoguer::{theme::ColorfulTheme, Input, MultiSelect};
 use std::io::Write;
-use zdiff::{
-    cli::{Action, Args, RunArgs},
-    highlight_text, DiffConfig, DiffProfile, RequestProfile, ResponseProfile,
-};
+
+use zdiff::cli::{Action, Args, RunArgs};
+use zdiff::config::{DiffConfig, DiffProfile, ExtraArgs, RequestProfile, ResponseProfile};
+use zdiff::{diff, highlight_text};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -32,8 +32,14 @@ async fn run(args: RunArgs) -> Result<()> {
         )
     })?;
 
-    let extra_args = args.extra_params.into();
-    let diff_str = profile.diff(extra_args).await?;
+    let extra_args = ExtraArgs {
+        headers: args.header.into(),
+        query: args.query.into(),
+        body: args.body.into(),
+    };
+
+    println!("{:?}", extra_args);
+    let diff_str = diff(profile, extra_args).await?;
 
     println!("{}", diff_str);
     Ok(())
