@@ -49,7 +49,7 @@ pub struct KeyVal {
 }
 
 fn parse_key_val(s: &str) -> Result<KeyVal> {
-    let mut parts = s.splitn(2, "=");
+    let mut parts = s.splitn(2, '=');
 
     let key = parts
         .next()
@@ -68,7 +68,7 @@ fn parse_key_val(s: &str) -> Result<KeyVal> {
     };
 
     Ok(KeyVal {
-        key_type: key_type,
+        key_type,
         key: key.to_owned(),
         value: value.to_owned(),
     })

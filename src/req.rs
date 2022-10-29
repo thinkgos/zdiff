@@ -94,7 +94,7 @@ impl FromStr for RequestProfile {
         url.set_query(None);
 
         // 如果json的object为空, 则为为None
-        let p_params =
+        let params =
             if params.is_null() || (params.is_object() && params.as_object().unwrap().is_empty()) {
                 None
             } else {
@@ -103,8 +103,8 @@ impl FromStr for RequestProfile {
 
         Ok(RequestProfile {
             method: Method::GET,
-            url: url,
-            params: p_params,
+            url,
+            params,
             headers: HeaderMap::new(),
             body: None,
         })
@@ -148,7 +148,7 @@ impl ResponseExt {
                 output.push_str(&format!("{}: {}\n", header.0, header.1.to_str()?));
             }
         }
-        output.push_str("\n");
+        output.push('\n');
 
         Ok(output)
     }

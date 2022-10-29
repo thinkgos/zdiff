@@ -51,7 +51,7 @@ pub fn diff_text(text1: &str, text2: &str) -> Result<String> {
                     }
                 }
                 if change.missing_newline() {
-                    output.push_str("\n");
+                    output.push('\n');
                 }
             }
         }
