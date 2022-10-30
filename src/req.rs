@@ -1,6 +1,7 @@
 use std::ops::Deref;
 
 use anyhow::{Ok, Result};
+use mime::Mime;
 use reqwest::header::HeaderMap;
 use reqwest::{header, Client, Response};
 
@@ -21,8 +22,8 @@ impl ResponseExt {
             let content_type = get_content_type(self.headers());
             let text = self.0.text().await?;
 
-            match content_type.as_deref() {
-                Some("application/json") => {
+            match content_type {
+                Some(v) if v == mime::APPLICATION_JSON => {
                     let text = filter_json(&text, &profile.skip_body)?;
                     output.push_str(&text);
                 }
@@ -69,10 +70,10 @@ fn filter_json(text: &str, skip_body: &[String]) -> Result<String> {
 
     Ok(serde_json::to_string_pretty(&json)?)
 }
-fn get_content_type(headers: &HeaderMap) -> Option<String> {
+fn get_content_type(headers: &HeaderMap) -> Option<Mime> {
     headers
         .get(header::CONTENT_TYPE)
-        .and_then(|v| v.to_str().unwrap().split(';').next().map(|v| v.to_string()))
+        .map(|v| v.to_str().unwrap().parse().unwrap())
 }
 
 pub async fn send(rp: &RequestProfile, args: &ExtraArgs) -> Result<ResponseExt> {

@@ -2,6 +2,7 @@ use std::ops::Deref;
 use std::str::FromStr;
 
 use anyhow::{anyhow, Result};
+use mime::Mime;
 use reqwest::header::{self, HeaderMap, HeaderName, HeaderValue};
 use reqwest::Method;
 use serde::{Deserialize, Serialize};
@@ -33,7 +34,12 @@ impl RequestProfile {
         for (k, v) in args.headers.deref() {
             headers.insert(HeaderName::from_str(k)?, HeaderValue::from_str(v)?);
         }
-
+        for (k, v) in args.query.deref() {
+            query[k] = v.parse()?;
+        }
+        for (k, v) in args.body.deref() {
+            body[k] = v.parse()?;
+        }
         if !headers.contains_key(header::CONTENT_TYPE) {
             headers.insert(
                 header::CONTENT_TYPE,
@@ -41,19 +47,14 @@ impl RequestProfile {
             );
         }
 
-        for (k, v) in args.query.deref() {
-            query[k] = v.parse()?;
-        }
-        for (k, v) in args.body.deref() {
-            body[k] = v.parse()?;
-        }
-
         // application/json; charset=utf-8
         let content_type = get_content_type(&headers);
 
-        let body: Result<String> = match content_type.as_deref() {
-            Some("application/json") => Ok(serde_json::to_string(&body)?),
-            Some("application/x-www-form-urlencoded" | "multipart/form-data") => {
+        let body: Result<String> = match content_type {
+            Some(v) if v == mime::APPLICATION_JSON => Ok(serde_json::to_string(&body)?),
+            Some(v)
+                if v == mime::APPLICATION_WWW_FORM_URLENCODED || v == mime::MULTIPART_FORM_DATA =>
+            {
                 Ok(serde_urlencoded::to_string(&body)?)
             }
             _ => Err(anyhow!("unsupported content-type")),
@@ -110,12 +111,6 @@ impl ResponseProfile {
     }
 }
 
-fn get_content_type(headers: &HeaderMap) -> Option<String> {
-    headers
-        .get(header::CONTENT_TYPE)
-        .and_then(|v| v.to_str().unwrap().split(';').next().map(|v| v.to_string()))
-}
-
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Profile {
     pub req1: RequestProfile,
@@ -128,4 +123,10 @@ impl Profile {
     pub fn new(req1: RequestProfile, req2: RequestProfile, res: Option<ResponseProfile>) -> Self {
         Self { req1, req2, res }
     }
+}
+
+fn get_content_type(headers: &HeaderMap) -> Option<Mime> {
+    headers
+        .get(header::CONTENT_TYPE)
+        .map(|v| v.to_str().unwrap().parse().unwrap())
 }
