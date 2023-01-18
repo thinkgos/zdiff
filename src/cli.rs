@@ -15,30 +15,30 @@ pub struct Args {
 #[derive(Subcommand, Debug, Clone)]
 #[non_exhaustive] // 表明未来还有其它元素添加
 pub enum Action {
-    /// Diff tow API responses base on given profile
+    /// 根据所给的 profile 比较两个 API 的回复
     Run(RunArgs),
-    /// Parse URLs to generate profile.
+    /// 解析 URLs 生成 profile.
     Parse,
 }
 
 #[derive(Parser, Debug, Clone)]
 pub struct RunArgs {
-    // profile name want to use.
+    /// 使用的profile名称.
     #[clap(short, long, value_parser)]
     pub profile: String,
-    /// Overrides args. override the query of the request.
+    /// 覆盖参数, 覆盖请求的 query.
     /// For query params. use `-q key=value`
     #[clap(short, long, value_parser = KeyValue::from_str, number_of_values = 1)]
     pub query: Vec<KeyValue>,
-    /// Overrides args. override the headers of the request.
+    /// 覆盖参数, 覆盖请求的 header.
     /// For headers. use `-d key=value`
     #[clap(short = 'd', long, value_parser = KeyValue::from_str, number_of_values = 1)]
     pub header: Vec<KeyValue>,
-    /// Overrides args. override the body of the request.
+    /// 覆盖参数, 覆盖请求的 body.
     /// For body. use `-b @key=value`
     #[clap(short, long, value_parser = KeyValue::from_str, number_of_values = 1)]
     pub body: Vec<KeyValue>,
-    // COnfiguration file to use.
+    // 使用的配置文件.
     #[clap(short, long, value_parser)]
     pub config: Option<String>,
 }
